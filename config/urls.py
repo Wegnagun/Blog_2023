@@ -9,4 +9,5 @@ admin.site.site_title = 'Админка Блога'
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('blog/', include('blog.urls', namespace='blog'))
 ]
