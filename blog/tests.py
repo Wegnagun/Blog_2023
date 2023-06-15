@@ -31,7 +31,6 @@ class PostTest(TestCase):
         """ Тест создания поста. """
 
         posts = len(Post.objects.all())
-        print(posts)
         self.assertEqual(self.post.title, 'Заголовок')
         self.assertEqual(self.post.slug, 'test-slug')
         self.assertEqual(self.post.author, self.user)
