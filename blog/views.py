@@ -1,23 +1,24 @@
 from django.conf import settings
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.shortcuts import render, get_object_or_404
+from django.views.generic import ListView
+from django.http import Http404
 
 from .models import Post
 
 
-def post_list(request):
+class PostListView(ListView):
     """ Представление списка постов. """
-    posts = Post.published.all()
-    paginator = Paginator(posts, settings.MAX_PAGES)
-    page_number = request.GET.get('page', 1)
-    try:
-        page_obj = paginator.page(page_number)
-    except PageNotAnInteger:
-        page_obj = paginator.page(1)
-    except EmptyPage:
-        page_obj = paginator.page(paginator.num_pages)
-    context = {'page_obj': page_obj}
-    return render(request, 'blog/list.html', context)
+    queryset = Post.published.all()
+    context_object_name = 'posts'
+    paginate_by = settings.MAX_PAGES
+    template_name = 'blog/list.html'
+
+    def get_context_data(self, **kwargs):
+        try:
+            return super(PostListView, self).get_context_data(**kwargs)
+        except Http404:
+            self.kwargs['page'] = 1
+            return super(PostListView, self).get_context_data(**kwargs)
 
 
 def post_detail(request, year: int, month: int, day: int, post: str):
