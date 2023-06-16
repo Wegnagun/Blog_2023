@@ -1,8 +1,9 @@
 from django.conf import settings
+from django.http import Http404
 from django.shortcuts import render, get_object_or_404
 from django.views.generic import ListView
-from django.http import Http404
 
+from .forms import EmailPostForm
 from .models import Post
 
 
@@ -33,3 +34,19 @@ def post_detail(request, year: int, month: int, day: int, post: str):
     )
 
     return render(request, 'blog/detail.html', {'post': post})
+
+
+def post_share(request, post_id):
+    """ Обработка формы отправки сообщений на почту. """
+    post = get_object_or_404(Post, id=post_id, status=Post.status.PUBLISHED)
+    if request.method == 'POST':
+        form = EmailPostForm(request.POST)
+        if form.is_valid():
+            cd = form.cleaned_data
+    else:
+        form = EmailPostForm()
+    context = {
+        'post': post,
+        'form': form
+    }
+    return render(request, 'blog/share.html', context)
