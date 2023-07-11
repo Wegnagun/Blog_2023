@@ -28,21 +28,6 @@ def post_list(request, tag_slug=None):
     context = {'posts': posts, 'tag': tag}
     return render(request, 'blog/list.html', context)
 
-# class PostListView(ListView, tag_slug=None):
-#     """ Представление списка постов. """
-#
-#     queryset = Post.published.all()
-#     context_object_name = 'posts'
-#     paginate_by = settings.MAX_PAGES
-#     template_name = 'blog/list.html'
-#
-#     def get_context_data(self, **kwargs):
-#         try:
-#             return super(PostListView, self).get_context_data(**kwargs)
-#         except Http404:
-#             self.kwargs['page'] = 1
-#             return super(PostListView, self).get_context_data(**kwargs)
-
 
 def post_detail(request, year: int, month: int, day: int, post: str):
     """ Детальное представление поста. """
