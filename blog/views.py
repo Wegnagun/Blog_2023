@@ -1,33 +1,52 @@
 from django.conf import settings
 from django.core.mail import send_mail
-from django.http import Http404
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.shortcuts import render, get_object_or_404
 from django.views.decorators.http import require_POST
-from django.views.generic import ListView
+from taggit.models import Tag
+from django.db.models import Count
 
 from .forms import EmailPostForm, CommentForm
 from .models import Post
 
 
-class PostListView(ListView):
+def post_list(request, tag_slug=None):
     """ Представление списка постов. """
+    post_list = Post.published.all()
+    tag = None
+    if tag_slug:
+        tag = get_object_or_404(Tag, slug=tag_slug)
+        post_list = post_list.filter(tags__in=[tag])
+    paginator = Paginator(post_list, settings.MAX_PAGES)
+    page_number = request.GET.get('page', 1)
+    try:
+        posts = paginator.page(page_number)
+    except PageNotAnInteger:
+        posts = paginator.page(1)
+    except EmptyPage:
+        posts = paginator.page(paginator.num_pages)
+    context = {'posts': posts, 'tag': tag}
+    return render(request, 'blog/list.html', context)
 
-    queryset = Post.published.all()
-    context_object_name = 'posts'
-    paginate_by = settings.MAX_PAGES
-    template_name = 'blog/list.html'
-
-    def get_context_data(self, **kwargs):
-        try:
-            return super(PostListView, self).get_context_data(**kwargs)
-        except Http404:
-            self.kwargs['page'] = 1
-            return super(PostListView, self).get_context_data(**kwargs)
+# class PostListView(ListView, tag_slug=None):
+#     """ Представление списка постов. """
+#
+#     queryset = Post.published.all()
+#     context_object_name = 'posts'
+#     paginate_by = settings.MAX_PAGES
+#     template_name = 'blog/list.html'
+#
+#     def get_context_data(self, **kwargs):
+#         try:
+#             return super(PostListView, self).get_context_data(**kwargs)
+#         except Http404:
+#             self.kwargs['page'] = 1
+#             return super(PostListView, self).get_context_data(**kwargs)
 
 
 def post_detail(request, year: int, month: int, day: int, post: str):
     """ Детальное представление поста. """
-
+    similar_posts_showing_count = 4
     post = get_object_or_404(
         Post,
         status=Post.Status.PUBLISHED,
@@ -38,10 +57,17 @@ def post_detail(request, year: int, month: int, day: int, post: str):
     )
     comments = post.comments.filter(active=True)
     form = CommentForm()
+    post_tags_ids = post.tags.values_list('id', flat=True)
+    similar_posts = Post.published.filter(tags__in=post_tags_ids).exclude(
+        id=post.id
+    ).annotate(same_tags=Count('tags')).order_by(
+        '-same_tags', '-publish'
+    )[:similar_posts_showing_count]
     context = {
         'post': post,
         'comments': comments,
-        'form': form
+        'form': form,
+        'similar_posts': similar_posts
     }
 
     return render(request, 'blog/detail.html', context)

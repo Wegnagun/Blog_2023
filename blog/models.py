@@ -2,6 +2,7 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
+from taggit.managers import TaggableManager
 
 
 class PublishedManager(models.Manager):
@@ -39,6 +40,7 @@ class Post(models.Model):
         default=Status.DRAFT,
         verbose_name='Статус поста',
     )
+    tags = TaggableManager()
 
     objects = models.Manager()  # менеджер по умолчанию
     published = PublishedManager()  # менеджер возврата опубликованных постов
